@@ -1,62 +1,92 @@
-import algs4.Graph;
-import algs4.Stack;
-import algs4.StdIn;
-import algs4.StdOut;
-
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Isomorfismo de árvores enraizadas (raiz = nó 1).
- *
- * Ideia: cada subárvore recebe um id inteiro que depende só da estrutura.
- * id(v) = número associado à lista ORDENADA dos ids dos filhos de v.
- * O dicionário lista -> id é compartilhado pelas duas árvores do mesmo teste,
- * então as árvores são isomórficas se e somente se id(raiz1) == id(raiz2).
- */
 public class Main {
 
-    // Calcula o id canônico da raiz (vértice 0) de uma árvore.
-    private static int canon(Graph g, Map<List<Integer>, Integer> mapa) {
-        int n = g.V();
-        int[] pai = new int[n];      // análogo ao edgeTo[] do DepthFirstPaths
-        int[] ordem = new int[n];    // ordem em que os vértices saem da pilha (pré-ordem)
-        int k = 0;
+    // ---------- entrada rápida ----------
+    private static final DataInputStream in = new DataInputStream(System.in);
+    private static final byte[] buf = new byte[1 << 16];
+    private static int bufLen = 0, bufPtr = 0;
 
-        // DFS iterativa (a do DepthFirstPaths é recursiva e estouraria a pilha com n = 10^5)
+    private static int readByte() throws IOException {
+        if (bufPtr == bufLen) {
+            bufLen = in.read(buf, 0, buf.length);
+            bufPtr = 0;
+            if (bufLen <= 0) return -1;
+        }
+        return buf[bufPtr++];
+    }
+
+    private static int readInt() throws IOException {
+        int c = readByte();
+        while (c != '-' && (c < '0' || c > '9')) c = readByte();
+        boolean neg = false;
+        if (c == '-') { neg = true; c = readByte(); }
+        int r = 0;
+        while (c >= '0' && c <= '9') {
+            r = r * 10 + (c - '0');
+            c = readByte();
+        }
+        return neg ? -r : r;
+    }
+
+    // ---------- árvore (listas de adjacência em arrays) ----------
+    private static int[] readTree(int n, int[] head, int[] nxt, int[] to, int[] deg) throws IOException {
+        Arrays.fill(head, 0, n, -1);
+        Arrays.fill(deg, 0, n, 0);
+        int cnt = 0;
+        for (int i = 0; i < n - 1; i++) {
+            int u = readInt() - 1;
+            int v = readInt() - 1;
+            to[cnt] = v; nxt[cnt] = head[u]; head[u] = cnt++;
+            to[cnt] = u; nxt[cnt] = head[v]; head[v] = cnt++;
+            deg[u]++; deg[v]++;
+        }
+        return null;
+    }
+
+    // Calcula o id canônico da raiz (vértice 0).
+    private static int canon(int n, int[] head, int[] nxt, int[] to, int[] deg,
+                             Map<List<Integer>, Integer> mapa) {
+        int[] pai = new int[n];
+        int[] ordem = new int[n];
+        int[] pilha = new int[n];
+        int sp = 0, k = 0;
+
         pai[0] = -1;
-        Stack<Integer> pilha = new Stack<Integer>();
-        pilha.push(0);
-        while (!pilha.isEmpty()) {
-            int v = pilha.pop();
+        pilha[sp++] = 0;
+        while (sp > 0) {
+            int v = pilha[--sp];
             ordem[k++] = v;
-            for (int w : g.adj(v)) {
-                if (w != pai[v]) {   // em árvore, "não é o pai" equivale a "não visitado"
+            for (int e = head[v]; e != -1; e = nxt[e]) {
+                int w = to[e];
+                if (w != pai[v]) {
                     pai[w] = v;
-                    pilha.push(w);
+                    pilha[sp++] = w;
                 }
             }
         }
 
-        // Em pré-ordem todo filho aparece depois do pai.
-        // Percorrendo ao contrário, os filhos são processados antes do pai.
         int[] id = new int[n];
         for (int i = n - 1; i >= 0; i--) {
             int v = ordem[i];
-            int numFilhos = g.degree(v) - (v == 0 ? 0 : 1);
+            int numFilhos = deg[v] - (v == 0 ? 0 : 1);
             Integer[] chave = new Integer[numFilhos];
             int j = 0;
-            for (int w : g.adj(v)) {
+            for (int e = head[v]; e != -1; e = nxt[e]) {
+                int w = to[e];
                 if (w != pai[v]) chave[j++] = id[w];
             }
-            Arrays.sort(chave);                       // ordem dos filhos é irrelevante
+            Arrays.sort(chave);
             List<Integer> lista = Arrays.asList(chave);
 
             Integer val = mapa.get(lista);
             if (val == null) {
-                val = mapa.size();                    // novo id
+                val = mapa.size();
                 mapa.put(lista, val);
             }
             id[v] = val;
@@ -64,28 +94,22 @@ public class Main {
         return id[0];
     }
 
-    public static void main(String[] args) {
-        int t = StdIn.readInt();
+    public static void main(String[] args) throws IOException {
+        int t = readInt();
+        StringBuilder out = new StringBuilder();
         while (t-- > 0) {
-            int n = StdIn.readInt();
+            int n = readInt();
 
-            Graph a = new Graph(n);
-            for (int i = 0; i < n - 1; i++) {
-                int u = StdIn.readInt() - 1;
-                int v = StdIn.readInt() - 1;
-                a.addEdge(u, v);
-            }
-            Graph b = new Graph(n);
-            for (int i = 0; i < n - 1; i++) {
-                int u = StdIn.readInt() - 1;
-                int v = StdIn.readInt() - 1;
-                b.addEdge(u, v);
-            }
+            int[] head = new int[n], nxt = new int[2 * n], to = new int[2 * n], deg = new int[n];
+            readTree(n, head, nxt, to, deg);
+            int[] head2 = new int[n], nxt2 = new int[2 * n], to2 = new int[2 * n], deg2 = new int[n];
+            readTree(n, head2, nxt2, to2, deg2);
 
             Map<List<Integer>, Integer> mapa = new HashMap<List<Integer>, Integer>();
-            int ra = canon(a, mapa);
-            int rb = canon(b, mapa);   // mesmo mapa: ids comparáveis
-            StdOut.println(ra == rb ? "SIM" : "NÃO");
+            int ra = canon(n, head, nxt, to, deg, mapa);
+            int rb = canon(n, head2, nxt2, to2, deg2, mapa);
+            out.append(ra == rb ? "YES" : "NO").append('\n');
         }
+        System.out.print(out);
     }
 }
