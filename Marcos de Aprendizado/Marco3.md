@@ -14,21 +14,23 @@ Uma folha tem lista vazia, logo recebe sempre o mesmo identificador (digamos 0).
 
 **Por que não usar a string canônica (parênteses balanceados)?** Ela também funciona (`"(" + filhos ordenados + ")"`), mas as strings podem chegar a O(n) por nó, dando O(n²) em caminhos. A numeração por ids mantém cada lista com tamanho igual ao número de filhos; a soma dos tamanhos é n−1.
 
-## 2. Implementações de referência do `algs4`
+## 2. Componentes utilizados
 
-O CSES aceita um único arquivo, com a classe pública `Main` e sem `package`. Por isso `Graph`, `Stack` e `Bag` do `algs4` entram como **classes `static` aninhadas** em `Main`, sem alterar a lógica.
+O CSES aceita um único arquivo, com a classe pública `Main` e sem `package`. Por isso `Graph`, `Bag` e `Stack` do `algs4` entram como **classes `static` aninhadas** em `Main`, sem alterar a lógica.
 
 | Componente | Papel | Adaptação feita |
 |---|---|---|
-| `Graph` | Guarda cada árvore como lista de adjacência (não direcionada, pois as arestas vêm sem orientação). | Aninhada em `Main`. Usa só `Graph(int V)`, `addEdge(v, w)`, `adj(v)`, `degree(v)` e `V()`. Foram removidos `Graph(In)` (o formato de entrada é outro), `Graph(Graph)`, `toString`, `toDot` e o `main` de teste. Cada aresta lida tem os vértices decrementados de 1, de modo que a raiz é o vértice 0. Um objeto por árvore. |
+| `Graph` | Guarda cada árvore como lista de adjacência (não direcionada, pois as arestas vêm sem orientação). | Aninhada em `Main`. Usa `Graph(int V)`, `addEdge(v, w)`, `adj(v)`, `degree(v)` e `V()`. Cada aresta lida tem os vértices decrementados de 1, de modo que a raiz é o vértice 0. Um objeto por árvore. |
 | `Bag` | Lista de adjacência interna do `Graph`. | Aninhada em `Main`, sem mudanças. A iteração sai em ordem inversa à inserção, o que não importa, pois as listas de ids são ordenadas. |
-| `Stack` | Pilha explícita da DFS iterativa. | Aninhada em `Main`; mantidos só `push`, `pop`, `isEmpty` e `size`. |
-| `DepthFirstPaths` | Modelo para o vetor de pais (`edgeTo[]`) a partir da raiz. | Reescrever a DFS de forma **iterativa**, pois a original é recursiva e n pode chegar a 10⁵ (um caminho estouraria a pilha de recursão em Java). Trocar o teste "não marcado" por "diferente do pai", suficiente em árvores. Registrar a ordem em que os vértices saem da pilha (pré-ordem). |
-| `StdIn` / `StdOut` | Leitura da entrada e impressão de YES/NO. | **Não usados.** `StdIn` usa `Scanner`, lento para até 4·10⁵ inteiros em 1 s; foi substituído por um leitor próprio sobre `DataInputStream` com buffer de 64 KB. `StdOut` faz flush a cada `print`; foi substituído por um `StringBuilder` impresso uma única vez com `System.out.print`. |
-| `java.util.HashMap` (fora do `algs4`; alternativa: `ST` / `RedBlackBST`) | Dicionário `lista de ids → id`. | Chave: a lista de ids dos filhos, **ordenada** (`Arrays.asList` sobre o vetor ordenado). Com `ST`/`RedBlackBST` seria necessário um comparador de listas; `HashMap` é mais simples e mais rápido. |
+| `Stack` | Pilha explícita da DFS iterativa. | Aninhada em `Main`; usa `push`, `pop` e `isEmpty`. |
+| `java.util.HashMap` | Dicionário `lista de ids → id`. | Chave: a lista de ids dos filhos, **ordenada** (`Arrays.asList` sobre o vetor ordenado). É mais simples e mais rápido que uma árvore de busca, que exigiria um comparador de listas. |
 | `java.util.Arrays.sort` | Ordenar os ids dos filhos de cada nó. | Aplicar sobre o vetor de ids de cada nó. |
 
-**Pós-ordem sem `DepthFirstOrder`:** na pré-ordem produzida pela pilha, todo filho aparece depois do pai. Percorrendo essa ordem **de trás para frente**, os filhos são processados antes do pai, que é exatamente o que o cálculo dos ids exige.
+**DFS iterativa:** a DFS é feita com a `Stack` em vez de recursão, pois n pode chegar a 10⁵ (um caminho estouraria a pilha de recursão em Java). Como a estrutura é uma árvore, o teste "diferente do pai" basta no lugar de marcar vértices visitados. Registra-se a ordem em que os vértices saem da pilha (pré-ordem).
+
+**Pós-ordem sem estrutura extra:** na pré-ordem produzida pela pilha, todo filho aparece depois do pai. Percorrendo essa ordem **de trás para frente**, os filhos são processados antes do pai, que é exatamente o que o cálculo dos ids exige.
+
+**Entrada e saída:** a leitura usa um leitor próprio sobre `DataInputStream` com buffer de 64 KB, e as respostas são acumuladas em um `StringBuilder` e impressas uma única vez, para caber em 1 s com até 4·10⁵ inteiros lidos.
 
 **Papel de cada etapa:**
 1. `readTree` lê cada árvore para um `Graph`.
@@ -50,7 +52,7 @@ main:
         r1 ← canon(G1, mapa)
         r2 ← canon(G2, mapa)
         saída.append(r1 == r2 ? "YES" : "NO") e quebra de linha
-    imprime saída de uma só vez          // System.out.print, sem flush por linha
+    imprime saída de uma só vez
 
 readTree(n):
     G ← Graph(n)
