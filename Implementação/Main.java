@@ -2,12 +2,124 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 public class Main {
 
-    // ---------- entrada rápida ----------
+    
+    //  Bag (algs4): lista de adjacência interna do Graph
+
+    static class Bag<Item> implements Iterable<Item> {
+        private Node<Item> first;
+        private int n;
+
+        private static class Node<Item> {
+            private Item item;
+            private Node<Item> next;
+        }
+
+        public Bag() { first = null; n = 0; }
+
+        public boolean isEmpty() { return first == null; }
+
+        public int size() { return n; }
+
+        public void add(Item item) {
+            Node<Item> oldfirst = first;
+            first = new Node<Item>();
+            first.item = item;
+            first.next = oldfirst;
+            n++;
+        }
+
+        public Iterator<Item> iterator() { return new LinkedIterator(first); }
+
+        private class LinkedIterator implements Iterator<Item> {
+            private Node<Item> current;
+
+            public LinkedIterator(Node<Item> first) { current = first; }
+
+            public boolean hasNext() { return current != null; }
+
+            public Item next() {
+                if (!hasNext()) throw new NoSuchElementException();
+                Item item = current.item;
+                current = current.next;
+                return item;
+            }
+        }
+    }
+  
+    //  Stack (algs4): pilha explícita da DFS iterativa
+   
+    static class Stack<Item> {
+        private Node<Item> first;
+        private int n;
+
+        private static class Node<Item> {
+            private Item item;
+            private Node<Item> next;
+        }
+
+        public Stack() { first = null; n = 0; }
+
+        public boolean isEmpty() { return first == null; }
+
+        public int size() { return n; }
+
+        public void push(Item item) {
+            Node<Item> oldfirst = first;
+            first = new Node<Item>();
+            first.item = item;
+            first.next = oldfirst;
+            n++;
+        }
+
+        public Item pop() {
+            if (isEmpty()) throw new NoSuchElementException("Stack underflow");
+            Item item = first.item;
+            first = first.next;
+            n--;
+            return item;
+        }
+    }
+
+    //  Graph (algs4): árvore como lista de adjacência (não direcionada)
+    static class Graph {
+        private final int V;
+        private int E;
+        private Bag<Integer>[] adj;
+
+        @SuppressWarnings("unchecked")
+        public Graph(int V) {
+            if (V < 0) throw new IllegalArgumentException("Number of vertices must be non-negative");
+            this.V = V;
+            this.E = 0;
+            adj = (Bag<Integer>[]) new Bag[V];
+            for (int v = 0; v < V; v++) adj[v] = new Bag<Integer>();
+        }
+
+        public int V() { return V; }
+
+        public int E() { return E; }
+
+        public void addEdge(int v, int w) {
+            E++;
+            adj[v].add(w);
+            adj[w].add(v);
+        }
+
+        public Iterable<Integer> adj(int v) { return adj[v]; }
+
+        public int degree(int v) { return adj[v].size(); }
+    }
+
+   
+    //  Entrada rápida (substitui StdIn/Scanner, lento para 4·10^5 inteiros)
+  
     private static final DataInputStream in = new DataInputStream(System.in);
     private static final byte[] buf = new byte[1 << 16];
     private static int bufLen = 0, bufPtr = 0;
@@ -34,39 +146,36 @@ public class Main {
         return neg ? -r : r;
     }
 
-    // ---------- árvore (listas de adjacência em arrays) ----------
-    private static int[] readTree(int n, int[] head, int[] nxt, int[] to, int[] deg) throws IOException {
-        Arrays.fill(head, 0, n, -1);
-        Arrays.fill(deg, 0, n, 0);
-        int cnt = 0;
+    // Lê n-1 arestas (vértices decrementados de 1; a raiz é o vértice 0)
+    private static Graph readTree(int n) throws IOException {
+        Graph g = new Graph(n);
         for (int i = 0; i < n - 1; i++) {
             int u = readInt() - 1;
             int v = readInt() - 1;
-            to[cnt] = v; nxt[cnt] = head[u]; head[u] = cnt++;
-            to[cnt] = u; nxt[cnt] = head[v]; head[v] = cnt++;
-            deg[u]++; deg[v]++;
+            g.addEdge(u, v);
         }
-        return null;
+        return g;
     }
 
-    // Calcula o id canônico da raiz (vértice 0).
-    private static int canon(int n, int[] head, int[] nxt, int[] to, int[] deg,
-                             Map<List<Integer>, Integer> mapa) {
+    
+    //  Forma canônica: DFS iterativa (Stack) + pré-ordem lida ao contrário
+   
+    private static int canon(Graph g, Map<List<Integer>, Integer> mapa) {
+        int n = g.V();
         int[] pai = new int[n];
         int[] ordem = new int[n];
-        int[] pilha = new int[n];
-        int sp = 0, k = 0;
+        int k = 0;
 
+        Stack<Integer> pilha = new Stack<Integer>();
         pai[0] = -1;
-        pilha[sp++] = 0;
-        while (sp > 0) {
-            int v = pilha[--sp];
+        pilha.push(0);
+        while (!pilha.isEmpty()) {
+            int v = pilha.pop();
             ordem[k++] = v;
-            for (int e = head[v]; e != -1; e = nxt[e]) {
-                int w = to[e];
+            for (int w : g.adj(v)) {
                 if (w != pai[v]) {
                     pai[w] = v;
-                    pilha[sp++] = w;
+                    pilha.push(w);
                 }
             }
         }
@@ -74,11 +183,10 @@ public class Main {
         int[] id = new int[n];
         for (int i = n - 1; i >= 0; i--) {
             int v = ordem[i];
-            int numFilhos = deg[v] - (v == 0 ? 0 : 1);
+            int numFilhos = g.degree(v) - (v == 0 ? 0 : 1);
             Integer[] chave = new Integer[numFilhos];
             int j = 0;
-            for (int e = head[v]; e != -1; e = nxt[e]) {
-                int w = to[e];
+            for (int w : g.adj(v)) {
                 if (w != pai[v]) chave[j++] = id[w];
             }
             Arrays.sort(chave);
@@ -100,14 +208,13 @@ public class Main {
         while (t-- > 0) {
             int n = readInt();
 
-            int[] head = new int[n], nxt = new int[2 * n], to = new int[2 * n], deg = new int[n];
-            readTree(n, head, nxt, to, deg);
-            int[] head2 = new int[n], nxt2 = new int[2 * n], to2 = new int[2 * n], deg2 = new int[n];
-            readTree(n, head2, nxt2, to2, deg2);
+            Graph g1 = readTree(n);
+            Graph g2 = readTree(n);
 
+            // dicionário compartilhado entre as duas árvores do teste
             Map<List<Integer>, Integer> mapa = new HashMap<List<Integer>, Integer>();
-            int ra = canon(n, head, nxt, to, deg, mapa);
-            int rb = canon(n, head2, nxt2, to2, deg2, mapa);
+            int ra = canon(g1, mapa);
+            int rb = canon(g2, mapa);
             out.append(ra == rb ? "YES" : "NO").append('\n');
         }
         System.out.print(out);
