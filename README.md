@@ -65,9 +65,9 @@ A documentação do desenvolvimento está na pasta [`acompanhamento/`](acompanha
 
 | Marco | Conteúdo | Arquivo |
 |---|---|---|
-| 1 | Problema e conhecimento prévio: entrada, saída e restrições, modelagem, classificação do grafo, resultado de aprendizagem, papel da DFS/BFS e rastreamento de uma instância pequena | [`Marco1.md`](Marcos de Aprendizado/Marco1.md) |
-| 2 | Componentes conexas: grafo aleatório com V = 6 e E = 6, listas de adjacência, excentricidades, raio, diâmetro e centro, rastreamento da DFS recursiva e análise de complexidade | [`Marco2.md`](MarcosdeAprendizado/Marco2.md) |
-| 3 | Estratégia algorítmica: propriedade estrutural, forma canônica das subárvores, componentes do `algs4` e suas adaptações, pseudocódigo, rastreio manual do exemplo e complexidade | [`marco-3.md`](acompanhamento/marco-3.md) |
+| 1 | Problema e conhecimento prévio: entrada, saída e restrições, modelagem, classificação do grafo, resultado de aprendizagem, papel da DFS/BFS e rastreamento de uma instância pequena | [`Marco1.md`](Marcos%20de%20Aprendizado/Marco1.md) |
+| 2 | Componentes conexas: grafo aleatório com V = 6 e E = 6, listas de adjacência, excentricidades, raio, diâmetro e centro, rastreamento da DFS recursiva e análise de complexidade | [`Marco2.md`](Marcos%20de%20Aprendizado/Marco2.md) |
+| 3 | Estratégia algorítmica: propriedade estrutural, forma canônica das subárvores, componentes do `algs4` e suas adaptações, pseudocódigo, rastreio manual do exemplo e complexidade | [`Marco3.md`](Marcos%20de%20Aprendizado/Marco3.md) |
 
 ## Estrutura do repositório
 
